@@ -1,11 +1,12 @@
 var nodemailer = require('nodemailer');
+require('dotenv').config()
 
 const sendMail = (email) => {
     const option = {
         service: 'gmail',
         auth: {
-            user: 'phuonghd@vnext.vn',
-            pass: 'ybqlsgdigmprnfbj'
+            user: process.env.EMAIL,
+            pass: process.env.PASSWORD
         }
     };
     var transporter = nodemailer.createTransport(option);
@@ -14,12 +15,26 @@ const sendMail = (email) => {
         if (error) {
             console.log(error);
         } else {
+            const link = `https://www.google.com/`
+
             var mail = {
-                from: 'phuonghd@vnext.vn',
                 to: email,
-                subject: 'Đăng ký user thành công',
-                text: 'Bạn đã đăng ký user thành công. Vui lòng đăng nhập để được sử dụng',
-            };
+                from: process.env.EMAIL,
+                subject: 'Notification of account registration.',
+                html: `
+                  <p>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</p>
+                  <p>You have successfully completed the registration process.</p>
+                  <p>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</p>
+                  <p>……………………………………………………………………………………………</p>
+                  <p>*If you do not know the information in this email, please delete it.</p>
+                  <p>Note: This is an automatic email, Please do not reply to this email.</p>
+                  <br/>
+                  <a href="${link}">Click here to activate your account</a>
+                  <p>……………………………………………………………………………………………</p>
+                  <p>Sender</p>
+                  <p>Admin</p>
+                  `
+            }
 
             transporter.sendMail(mail, function (error, info) {
                 if (error) {

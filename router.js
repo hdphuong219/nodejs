@@ -3,6 +3,8 @@ const router = express.Router();
 const db = require('./dbConnection');
 const jwt = require('jsonwebtoken');
 const sendMail = require('./sendMail')
+const bcrypt = require('bcrypt');
+require('dotenv').config()
 
 router.post('/login', (req, res, next) => {
     db.query(
@@ -21,8 +23,16 @@ router.post('/login', (req, res, next) => {
                 // check password
                 const passRequest = req.body.password;
                 const passCheck = result[0]['password'];
-                if (passRequest === passCheck) {
-                    const token = jwt.sign({ id: result[0].id }, 'the-super-strong-secrect', { expiresIn: '12h' });
+                const verified = bcrypt.compareSync(passRequest, passCheck);
+
+                // const expiresAt = new Date();
+                // const abc = expiresAt.setHours(expiresAt.getHours() + 12)
+                // console.log(abc);
+
+                if (verified) {
+                    const accessToken = jwt.sign({ id: result[0].id },
+                        process.env.ACCESS_TOKEN_SECRET,
+                        { expiresIn: '12h' });
                     db.query(
                         `UPDATE users SET last_login = now() WHERE id = '${result[0].id}'`
                     );
@@ -30,7 +40,7 @@ router.post('/login', (req, res, next) => {
                         success: true,
                         data: {
                             message: 'Logged in successfully!',
-                            token,
+                            accessToken,
                             user: result[0]
                         }
                     });
@@ -60,7 +70,10 @@ router.post('/register', (req, res) => {
                     message: 'Email này đã được đăng ký'
                 });
             } else {
-                const sql = `INSERT INTO users (name, email, password) VALUES ('${req.body.name}','${req.body.email}', '${req.body.password}')`
+                const name = req.body.name;
+                const email = req.body.email;
+                const password = bcrypt.hashSync(req.body.password, 8);
+                const sql = `INSERT INTO users (name, email, password) VALUES ('${name}','${email}', '${password}')`
                 db.query(sql, (er, rs) => {
                     if (er) throw er;
                     sendMail(req.body.email)
@@ -73,5 +86,8 @@ router.post('/register', (req, res) => {
         }
     );
 });
+
+
+router.get("/user", authenToken)
 
 module.exports = router;
